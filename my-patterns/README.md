@@ -45,6 +45,15 @@ If you want to automatically deploy your site on push, go to `deploy.yml` and ch
 - install dependencies with `npm run setup`
 - run dev server with `npm run repl` and open `http://localhost:4321/strudel/swatch/`
 
+## live coding from VS Code
+
+To edit a file in VS Code and hot-update the browser REPL without stopping audio, see [tools/live-sync/README.md](../tools/live-sync/README.md). Short version:
+
+1. `npm run live-sync`
+2. Start the website (`cd website && npm run dev`)
+3. Open `live.js` in VS Code; press Play in the browser once
+4. Save in VS Code → Update/evaluate runs; music continues
+
 ## tests fail?
 
 Your tests might fail if the code does not follow prettiers format.

@@ -676,6 +676,12 @@ importers:
         specifier: ^6.3.11
         version: 6.3.11
 
+  tools/live-sync:
+    dependencies:
+      ws:
+        specifier: ^8.18.3
+        version: 8.18.3
+
   website:
     dependencies:
       '@algolia/client-search':
@@ -10616,7 +10622,7 @@ snapshots:
       '@supabase/node-fetch': 2.6.15
       '@types/phoenix': 1.6.6
       '@types/ws': 8.5.14
-      ws: 8.18.0
+      ws: 8.18.3
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate

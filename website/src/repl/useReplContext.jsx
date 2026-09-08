@@ -35,6 +35,7 @@ import { audioEngineTargets } from '../settings.mjs';
 import { useStore } from '@nanostores/react';
 import { prebake, switchAngel } from './prebake.mjs';
 import { getRandomTune, initCode, loadModules, shareCode } from './util.mjs';
+import { startLiveSync } from './liveSync.mjs';
 import './Repl.css';
 import { setInterval, clearInterval } from 'worker-timers';
 import { getMetadata } from '../metadata_parser';
@@ -154,6 +155,8 @@ export function useReplContext() {
       editor.setCode(code);
       setDocumentTitle(code);
       logger(`Welcome to Strudel! ${msg} Press play or hit ctrl+enter to run it!`, 'highlight');
+      // after session load so live.js can take over via Update path
+      startLiveSync(() => window.strudelMirror);
     });
 
     editorRef.current = editor;

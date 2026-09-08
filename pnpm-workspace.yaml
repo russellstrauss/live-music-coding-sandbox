@@ -2,6 +2,7 @@ packages:
   - packages/*
   - examples/*
   - tools/dbpatch
+  - tools/live-sync
   - website/
 
 onlyBuiltDependencies:
