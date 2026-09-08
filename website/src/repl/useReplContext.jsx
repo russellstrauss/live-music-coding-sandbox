@@ -33,7 +33,7 @@ import {
 import { superdirtOutput } from '@strudel/osc/superdirtoutput';
 import { audioEngineTargets } from '../settings.mjs';
 import { useStore } from '@nanostores/react';
-import { prebake } from './prebake.mjs';
+import { prebake, switchAngel } from './prebake.mjs';
 import { getRandomTune, initCode, loadModules, shareCode } from './util.mjs';
 import './Repl.css';
 import { setInterval, clearInterval } from 'worker-timers';
@@ -88,8 +88,10 @@ export function useReplContext() {
       drawContext,
       prebake: async () =>
         Promise.all([modulesLoading, presets]).then(() => {
-          if (prebakeScript?.length) {
-            return evaluate(prebakeScript ?? '');
+          // switchAngel needs evalScope globals (e.g. register) from loadModules
+          const scripts = [switchAngel, prebakeScript].filter((s) => s?.length).join('\n');
+          if (scripts.length) {
+            return evaluate(scripts);
           }
         }),
       onUpdateState: (state) => {

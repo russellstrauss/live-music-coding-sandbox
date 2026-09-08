@@ -9,9 +9,18 @@ import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { $featuredPatterns /* , loadDBPatterns */ } from '@src/user_pattern_utils.mjs';
 
 // Create a single supabase client for interacting with your database
+// Auth session locking is unused here (anon DB only) and can throw
+// NavigatorLockAcquireTimeoutError when multiple tabs compete for the lock.
 export const supabase = createClient(
   'https://pidxdsxphlhzjnzmifth.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpZHhkc3hwaGxoempuem1pZnRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NTYyMzA1NTYsImV4cCI6MTk3MTgwNjU1Nn0.bqlw7802fsWRnqU5BLYtmXk_k-D1VFmbkHMywWc15NM',
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  },
 );
 
 let dbLoaded;

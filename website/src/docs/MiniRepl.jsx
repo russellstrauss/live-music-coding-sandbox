@@ -2,10 +2,10 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { Icon } from './Icon';
 import { silence, noteToMidi, _mod } from '@strudel/core';
 import { getDrawContext, getPunchcardPainter } from '@strudel/draw';
-import { transpiler } from '@strudel/transpiler';
+import { evaluate, transpiler } from '@strudel/transpiler';
 import { getAudioContext, webaudioOutput, initAudioOnFirstClick } from '@strudel/webaudio';
 import { StrudelMirror } from '@strudel/codemirror';
-import { prebake } from '../repl/prebake.mjs';
+import { prebake, switchAngel } from '../repl/prebake.mjs';
 import { loadModules, setVersionDefaultsFrom } from '../repl/util.mjs';
 import Claviature from '@components/Claviature';
 import useClient from '@src/useClient.mjs';
@@ -75,7 +75,12 @@ export function MiniRepl({
         }
         return pat;
       },
-      prebake: async () => Promise.all([modulesLoading, prebaked]),
+      prebake: async () =>
+        Promise.all([modulesLoading, prebaked]).then(() => {
+          if (switchAngel?.length) {
+            return evaluate(switchAngel);
+          }
+        }),
       onUpdateState: (state) => {
         setReplState({ ...state });
       },

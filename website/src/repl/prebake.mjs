@@ -4,7 +4,9 @@ import { registerSamplesFromDB } from './idbutils.mjs';
 import './piano.mjs';
 import './files.mjs';
 import { settingsMap } from '@src/settings.mjs';
-import { evaluate } from '@strudel/transpiler';
+import switchAngel from '../../../libraries/switchangel.strudel?raw';
+
+export { switchAngel };
 
 const { BASE_URL } = import.meta.env;
 const baseNoTrailing = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
@@ -39,6 +41,8 @@ export async function prebake() {
       prebake: true,
     }),
     samples(`${baseCDN}/mridangam.json`, `${baseCDN}/mrid/`, { prebake: true, tag: 'drum-machines' }),
+    samples('github:switchangel/breaks', '', { prebake: true }),
+    samples('github:switchangel/pad', '', { prebake: true }),
     samples(
       {
         casio: ['casio/high.wav', 'casio/low.wav', 'casio/noise.wav'],
