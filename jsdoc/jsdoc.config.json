@@ -1,4 +1,7 @@
 {
+  // Package sources are at most 3 levels under packages/. Deeper recursion follows
+  // workspace junctions through node_modules and runs the process out of memory.
+  "recurseDepth": 3,
   "source": {
     "includePattern": ".+\\.(js(doc|x)?|mjs)$",
     "excludePattern": "node_modules|shift-parser|shift-reducer|shift-traverser|dist"
