@@ -1,5 +1,7 @@
+import Bars3Icon from '@heroicons/react/20/solid/Bars3Icon';
 import PlayCircleIcon from '@heroicons/react/20/solid/PlayCircleIcon';
 import StopCircleIcon from '@heroicons/react/20/solid/StopCircleIcon';
+import XMarkIcon from '@heroicons/react/20/solid/XMarkIcon';
 import cx from '@src/cx.mjs';
 import { useSettings, setIsZen } from '../../settings.mjs';
 import '../Repl.css';
@@ -7,7 +9,7 @@ import '../Repl.css';
 const { BASE_URL } = import.meta.env;
 const baseNoTrailing = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
 
-export function Header({ context, embedded = false }) {
+export function Header({ context, embedded = false, menu }) {
   const { started, pending, isDirty, activeCode, handleTogglePlay, handleEvaluate, handleShuffle, handleShare } =
     context;
   const isEmbedded = typeof window !== 'undefined' && (embedded || window.location !== window.parent.location);
@@ -19,12 +21,12 @@ export function Header({ context, embedded = false }) {
       className={cx(
         'flex-none text-black  z-[100] text-lg select-none h-20 md:h-14',
         !isZen && !isEmbedded && 'bg-lineHighlight',
-        isZen ? 'h-12 w-8 fixed top-0 left-0' : 'sticky top-0 w-full py-1 justify-between',
-        isEmbedded ? 'flex' : 'md:flex',
+        isZen ? 'h-12 w-8 fixed top-0 left-0' : 'sticky top-0 w-full py-1 md:justify-between',
+        isEmbedded ? 'flex' : isZen ? 'md:flex' : 'flex flex-col md:flex-row',
       )}
       style={{ fontFamily }}
     >
-      <div className="px-4 flex space-x-2 md:pt-0 select-none">
+      <div className="flex w-full items-center justify-between space-x-2 pl-4 pr-1 select-none md:w-auto md:justify-start md:px-4 md:pt-0">
         <h1
           onClick={() => {
             if (isEmbedded) window.open(window.location.href.replace('embed', ''));
@@ -61,13 +63,25 @@ export function Header({ context, embedded = false }) {
             </div>
           )}
         </h1>
+        {menu && (
+          <button
+            type="button"
+            className="shrink-0 p-2 text-foreground hover:opacity-50 md:hidden"
+            aria-label={menu.open ? 'Close menu' : 'Open menu'}
+            aria-expanded={menu.open}
+            onClick={menu.onToggle}
+          >
+            {menu.open ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
+          </button>
+        )}
       </div>
       {!isZen && !isButtonRowHidden && (
-        <div className="flex max-w-full overflow-auto text-foreground px-1 md:px-2">
+        <div className="flex max-w-full items-center overflow-auto text-foreground px-1 md:px-2">
           <button
             onClick={handleTogglePlay}
             title={started ? 'stop' : 'play'}
             className={cx(
+              'flex items-center',
               !isEmbedded ? 'p-2' : 'px-2',
               'hover:opacity-50',
               !started && !isCSSAnimationDisabled && 'animate-pulse',

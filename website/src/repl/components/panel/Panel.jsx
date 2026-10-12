@@ -1,4 +1,5 @@
 import cx from '@src/cx.mjs';
+import { useEffect, useRef } from 'react';
 import { setPanelPinned, setActiveFooter as setTab, setIsPanelOpened, useSettings } from '../../../settings.mjs';
 import { ConsoleTab } from './ConsoleTab';
 import { FilesTab } from './FilesTab';
@@ -36,6 +37,21 @@ export function HorizontalPanel({ context }) {
         <Tabs setTab={setTab} tab={tab} />
       </div>
     </PanelNav>
+  );
+}
+
+export function MobilePanel({ context }) {
+  const { activeFooter: tab } = useSettings();
+
+  return (
+    <div className="absolute inset-0 z-[10000] flex flex-col overflow-hidden bg-background text-foreground">
+      <div className="flex w-full min-w-0 shrink-0 items-center px-1">
+        <Tabs setTab={setTab} tab={tab} className="w-full pt-2" />
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto">
+        <PanelContent context={context} tab={tab} />
+      </div>
+    </div>
   );
 }
 
@@ -145,9 +161,10 @@ function PanelTab({ label, isSelected, onClick }) {
       <button
         onClick={onClick}
         className={cx(
-          'h-8 px-2 text-foreground cursor-pointer hover:opacity-50 flex items-center space-x-1 border-b',
+          'h-8 shrink-0 whitespace-nowrap px-2 text-foreground cursor-pointer hover:opacity-50 flex items-center space-x-1 border-b',
           isSelected ? 'border-foreground' : 'border-transparent',
         )}
+        aria-selected={isSelected}
       >
         {label}
       </button>
@@ -155,8 +172,32 @@ function PanelTab({ label, isSelected, onClick }) {
   );
 }
 function Tabs({ setTab, tab, className }) {
+  const scrollerRef = useRef(null);
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    const selected = scroller?.querySelector('[aria-selected="true"]');
+    if (!scroller || !selected) {
+      return;
+    }
+    const tabLeft = selected.offsetLeft;
+    const tabRight = tabLeft + selected.offsetWidth;
+    const viewRight = scroller.scrollLeft + scroller.clientWidth;
+    if (tabLeft < scroller.scrollLeft) {
+      scroller.scrollLeft = tabLeft;
+    } else if (tabRight > viewRight) {
+      scroller.scrollLeft = tabRight - scroller.clientWidth;
+    }
+  }, [tab]);
+
   return (
-    <div className={cx('flex select-none max-w-full overflow-auto pb-2', className)}>
+    <div
+      ref={scrollerRef}
+      className={cx(
+        'flex min-w-0 max-w-full flex-nowrap select-none touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain pb-2',
+        className,
+      )}
+    >
       {Object.keys(tabNames).map((key) => {
         const val = tabNames[key];
         return <PanelTab key={key} isSelected={tab === val} label={key} onClick={() => setTab(val)} />;

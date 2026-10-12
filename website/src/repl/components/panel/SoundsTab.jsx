@@ -77,10 +77,10 @@ export function SoundsTab() {
     numRef.current = 0;
   });
   return (
-    <div id="sounds-tab" className="px-4 flex gap-2 flex-col w-full h-full text-foreground">
+    <div id="sounds-tab" className="px-4 flex gap-2 flex-col w-full min-w-0 h-full text-foreground">
       <Textbox placeholder="Search" value={search} onChange={(v) => setSearch(v)} />
 
-      <div className=" flex shrink-0 flex-wrap">
+      <div className="flex min-w-0 shrink-0 flex-wrap">
         <ButtonGroup
           value={soundsFilter}
           onChange={(value) => settingsMap.setKey('soundsFilter', value)}
