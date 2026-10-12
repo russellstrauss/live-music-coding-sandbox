@@ -6,6 +6,7 @@ import rehypeSlug from 'rehype-slug';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeUrls from 'rehype-urls';
 import bundleAudioWorkletPlugin from 'vite-plugin-bundle-audioworklet';
+import { songsApiPlugin } from './songs-api.mjs';
 
 import tailwind from '@astrojs/tailwind';
 import AstroPWA from '@vite-pwa/astro';
@@ -135,7 +136,7 @@ export default defineConfig({
   site,
   base,
   vite: {
-    plugins: [bundleAudioWorkletPlugin()],
+    plugins: [songsApiPlugin(), bundleAudioWorkletPlugin()],
     ssr: {
       // Example: Force a broken package to skip SSR processing, if needed
       // external: ['fraction.js'], // https://github.com/infusion/Fraction.js/issues/51

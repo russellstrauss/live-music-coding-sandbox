@@ -9,6 +9,7 @@ import { SoundsTab } from './SoundsTab';
 import { useLogger } from '../useLogger';
 import { WelcomeTab } from './WelcomeTab';
 import { PatternsTab } from './PatternsTab';
+import { SongsTab } from './SongsTab';
 import { ChevronLeftIcon, XMarkIcon } from '@heroicons/react/16/solid';
 import ExportTab from './ExportTab';
 
@@ -95,6 +96,7 @@ export function VerticalPanel({ context }) {
 const tabNames = {
   welcome: 'intro',
   patterns: 'patterns',
+  songs: 'songs',
   sounds: 'sounds',
   reference: 'reference',
   export: 'export',
@@ -138,6 +140,8 @@ function PanelContent({ context, tab }) {
   switch (tab) {
     case tabNames.patterns:
       return <PatternsTab context={context} />;
+    case tabNames.songs:
+      return <SongsTab context={context} />;
     case tabNames.console:
       return <ConsoleTab />;
     case tabNames.sounds:
