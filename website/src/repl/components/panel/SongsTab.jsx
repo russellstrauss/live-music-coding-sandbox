@@ -3,7 +3,16 @@ import cx from '@src/cx.mjs';
 import { ActionButton } from '../button/action-button.jsx';
 import { Textbox } from '../textbox/Textbox.jsx';
 import { SelectInput } from './SelectInput.jsx';
-import { createSongDirectory, fetchSongs, saveSong } from '../../songs-client.mjs';
+import { isTauri } from '../../../tauri.mjs';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import {
+  createSongDirectory,
+  fetchSongs,
+  saveSong,
+  setSongUrl,
+  songIdFromLocation,
+  songShareUrl,
+} from '../../songs-client.mjs';
 
 export function SongsTab({ context }) {
   const [directories, setDirectories] = useState([]);
@@ -12,6 +21,7 @@ export function SongsTab({ context }) {
   const [folderName, setFolderName] = useState('');
   const [title, setTitle] = useState('');
   const [selectedPath, setSelectedPath] = useState('');
+  const [selectedId, setSelectedId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -24,7 +34,21 @@ export function SongsTab({ context }) {
   };
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    refresh()
+      .then((catalog) => {
+        const id = songIdFromLocation();
+        if (!id) {
+          return;
+        }
+        const song = catalog.songs.find((item) => item.id === id);
+        if (!song) {
+          setError('Shared song was not found');
+          return;
+        }
+        rememberSong(song, false);
+        setMessage(`Loaded ${song.title}`);
+      })
+      .catch((err) => setError(err.message));
   }, []);
 
   const run = async (action) => {
@@ -51,8 +75,10 @@ export function SongsTab({ context }) {
         code: currentCode(),
       });
       setSelectedPath(saved.path);
+      setSelectedId(saved.id);
       setDirectory(saved.directory);
       setTitle(saved.title);
+      setSongUrl(saved.id);
       setMessage(`Saved website/songs/${saved.path}`);
       await refresh();
     });
@@ -66,17 +92,36 @@ export function SongsTab({ context }) {
       await refresh();
     });
 
-  const onSelectSong = (song) => {
-    context.editorRef.current?.setCode(song.code);
-    if (context.started) {
-      context.handleEvaluate();
+  const rememberSong = (song, loadCode) => {
+    if (loadCode) {
+      context.editorRef.current?.setCode(song.code);
+      if (context.started) {
+        context.handleEvaluate();
+      }
     }
     setSelectedPath(song.path);
+    setSelectedId(song.id);
     setDirectory(song.directory);
     setTitle(song.title);
+    setSongUrl(song.id);
     setError('');
+  };
+
+  const onSelectSong = (song) => {
+    rememberSong(song, true);
     setMessage(`Loaded ${song.title}`);
   };
+
+  const onCopyLink = () =>
+    run(async () => {
+      const shareUrl = songShareUrl(selectedId);
+      if (isTauri()) {
+        await writeText(shareUrl);
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+      }
+      setMessage('Song link copied');
+    });
 
   const folderOptions = new Map([['', 'top level']]);
   directories.forEach((folder) => folderOptions.set(folder.path, folder.path));
@@ -86,8 +131,23 @@ export function SongsTab({ context }) {
   return (
     <div className="flex h-full w-full min-w-0 flex-col gap-3 px-4 py-2 text-foreground">
       <p className="text-sm opacity-70">
-        Songs are saved as JavaScript files in website/songs so they can be committed and loaded again.
+        Songs are saved as JavaScript files in website/songs. Each song has a unique link that loads that song.
       </p>
+      {selectedId && (
+        <div className="flex flex-col gap-1 text-sm">
+          <span>Share link</span>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <Textbox
+              value={songShareUrl(selectedId)}
+              readOnly
+              onChange={() => {}}
+              className="min-w-0 flex-1"
+              aria-label="song share link"
+            />
+            <ActionButton label="copy link" disabled={busy} onClick={onCopyLink} />
+          </div>
+        </div>
+      )}
       <label className="flex flex-col gap-1 text-sm">
         Title
         <Textbox value={title} placeholder="song title" onChange={setTitle} />

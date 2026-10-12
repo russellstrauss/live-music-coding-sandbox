@@ -21,7 +21,7 @@ import { setVersionDefaultsFrom } from './util.mjs';
 import { StrudelMirror, defaultSettings } from '@strudel/codemirror';
 import { clearHydra } from '@strudel/hydra';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { parseBoolean, settingsMap, useSettings } from '../settings.mjs';
+import { parseBoolean, setActiveFooter, setIsPanelOpened, settingsMap, useSettings } from '../settings.mjs';
 import {
   setActivePattern,
   setLatestCode,
@@ -34,6 +34,7 @@ import { superdirtOutput } from '@strudel/osc/superdirtoutput';
 import { audioEngineTargets } from '../settings.mjs';
 import { useStore } from '@nanostores/react';
 import { prebake, switchAngel } from './prebake.mjs';
+import { songIdFromLocation } from './songs-client.mjs';
 import { getRandomTune, initCode, loadModules, shareCode } from './util.mjs';
 import { startLiveSync } from './liveSync.mjs';
 import liveCode from '../../../live.js?raw';
@@ -158,6 +159,10 @@ export function useReplContext() {
       }
       editor.setCode(code);
       setDocumentTitle(code);
+      if (songIdFromLocation()) {
+        setActiveFooter('songs');
+        setIsPanelOpened(true);
+      }
       logger(`Welcome to Strudel! ${msg} Press play or hit ctrl+enter to run it!`, 'highlight');
       startLiveSync(() => window.strudelMirror);
     });

@@ -7,6 +7,7 @@ import './Repl.css';
 import { createClient } from '@supabase/supabase-js';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { $featuredPatterns /* , loadDBPatterns */ } from '@src/user_pattern_utils.mjs';
+import { fetchSong, songIdFromLocation } from './songs-client.mjs';
 
 // Create a single supabase client for interacting with your database
 // Auth session locking is unused here (anon DB only) and can throw
@@ -31,6 +32,15 @@ let dbLoaded;
 export async function initCode() {
   // load code from url hash (either short hash from database or decode long hash)
   try {
+    const songId = songIdFromLocation();
+    if (songId) {
+      try {
+        const song = await fetchSong(songId);
+        return song.code;
+      } catch (err) {
+        console.warn('failed to load song', songId, err);
+      }
+    }
     const initialUrl = window.location.href;
     const hash = initialUrl.split('?')[1]?.split('#')?.[0]?.split('&')[0];
     const codeParam = window.location.href.split('#')[1] || '';

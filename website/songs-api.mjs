@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,11 +13,12 @@ export function songsApiPlugin() {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const pathname = (req.url || '').split('?')[0].replace(/\/$/, '') || '/';
-        if (pathname !== '/api/songs' && pathname !== '/api/songs/directories') {
+        const songId = songIdFromPath(pathname);
+        if (pathname !== '/api/songs' && pathname !== '/api/songs/directories' && !songId) {
           next();
           return;
         }
-        handleSongsRequest(req, res, pathname).catch((error) => {
+        handleSongsRequest(req, res, pathname, songId).catch((error) => {
           sendJson(res, error.statusCode || 500, { error: error.message || 'Song request failed' });
         });
       });
@@ -24,8 +26,24 @@ export function songsApiPlugin() {
   };
 }
 
-async function handleSongsRequest(req, res, pathname) {
+function songIdFromPath(pathname) {
+  const match = pathname.match(/^\/api\/songs\/([^/]+)$/);
+  if (!match || match[1] === 'directories') {
+    return '';
+  }
+  return decodeURIComponent(match[1]);
+}
+
+async function handleSongsRequest(req, res, pathname, songId) {
   fs.mkdirSync(songsRoot, { recursive: true });
+  if (req.method === 'GET' && songId) {
+    const song = findSongById(songId);
+    if (!song) {
+      throw httpError(404, 'Song not found');
+    }
+    sendJson(res, 200, song);
+    return;
+  }
   if (req.method === 'GET' && pathname === '/api/songs') {
     sendJson(res, 200, listSongs());
     return;
@@ -52,7 +70,7 @@ export function listSongs() {
   return { directories, songs };
 }
 
-function walk(dir, rel, directories, songs) {
+function walk(dir, rel, directories, songs, seen = new Set()) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.name.startsWith('.')) {
       continue;
@@ -61,18 +79,33 @@ function walk(dir, rel, directories, songs) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       directories.push({ path: childRel, name: entry.name });
-      walk(full, childRel, directories, songs);
+      walk(full, childRel, directories, songs, seen);
     } else if (entry.isFile() && entry.name.endsWith('.js')) {
       const source = fs.readFileSync(full, 'utf8');
       const song = parseSongSource(source);
+      const filePath = childRel.split(path.sep).join('/');
+      const directory = rel.split(path.sep).join('/');
+      if (!song.id || seen.has(song.id)) {
+        song.id = createSongId(seen);
+        fs.writeFileSync(full, serializeSong(song.id, song.title, song.code));
+      }
+      seen.add(song.id);
       songs.push({
-        path: childRel.split(path.sep).join('/'),
-        directory: rel.split(path.sep).join('/'),
+        id: song.id,
+        path: filePath,
+        directory,
         title: song.title,
         code: song.code,
       });
     }
   }
+}
+
+export function findSongById(id) {
+  if (!isSongId(id)) {
+    return null;
+  }
+  return listSongs().songs.find((song) => song.id === id) || null;
 }
 
 export function saveSong(body) {
@@ -83,14 +116,17 @@ export function saveSong(body) {
     if (!fs.existsSync(file.full)) {
       throw httpError(404, 'Song file not found');
     }
-    fs.writeFileSync(file.full, serializeSong(title, code));
-    return { path: file.rel, directory: file.directory, title, code };
+    const existing = parseSongSource(fs.readFileSync(file.full, 'utf8'));
+    const id = existing.id || createSongId(collectIds());
+    fs.writeFileSync(file.full, serializeSong(id, title, code));
+    return { id, path: file.rel, directory: file.directory, title, code };
   }
   const directory = resolveDirectory(body?.directory || '');
   const filename = uniqueFilename(directory.full, slugify(title));
   const rel = directory.rel ? `${directory.rel}/${filename}` : filename;
-  fs.writeFileSync(path.join(directory.full, filename), serializeSong(title, code));
-  return { path: rel, directory: directory.rel, title, code };
+  const id = createSongId(collectIds());
+  fs.writeFileSync(path.join(directory.full, filename), serializeSong(id, title, code));
+  return { id, path: rel, directory: directory.rel, title, code };
 }
 
 export function createDirectory(body) {
@@ -109,31 +145,49 @@ export function createDirectory(body) {
   return { path: rel, name };
 }
 
-export function serializeSong(title, code) {
-  return `export const title = ${JSON.stringify(title)};\nexport const code = ${JSON.stringify(code)};\n`;
+export function serializeSong(id, title, code) {
+  return `export const id = ${JSON.stringify(id)};\nexport const title = ${JSON.stringify(title)};\nexport const code = ${JSON.stringify(code)};\n`;
 }
 
 export function parseSongSource(source) {
-  let index = source.indexOf('export const title');
-  if (index === -1) {
-    throw httpError(400, 'Song file is missing a title');
-  }
-  index = source.indexOf('=', index) + 1;
-  const title = readJsonString(source, index);
-  index = skipSpace(source, title.index);
-  if (source[index] === ';') {
-    index += 1;
-  }
-  const codeAt = source.indexOf('export const code', index);
-  if (codeAt === -1) {
-    throw httpError(400, 'Song file is missing code');
-  }
-  index = source.indexOf('=', codeAt) + 1;
-  const code = readJsonString(source, index);
-  if (typeof title.value !== 'string' || typeof code.value !== 'string') {
+  const title = readExportString(source, 'title');
+  const code = readExportString(source, 'code');
+  const id = readExportString(source, 'id', true);
+  if (typeof title !== 'string' || typeof code !== 'string') {
     throw httpError(400, 'Song title and code must be strings');
   }
-  return { title: title.value, code: code.value };
+  return { id: isSongId(id) ? id : '', title, code };
+}
+
+function readExportString(source, name, optional = false) {
+  const at = source.indexOf(`export const ${name}`);
+  if (at === -1) {
+    if (optional) {
+      return '';
+    }
+    throw httpError(400, name === 'title' ? 'Song file is missing a title' : 'Song file is missing code');
+  }
+  const eq = source.indexOf('=', at);
+  if (eq === -1) {
+    throw httpError(400, 'Song file has an unreadable value');
+  }
+  return readJsonString(source, eq + 1).value;
+}
+
+export function isSongId(id) {
+  return typeof id === 'string' && /^[A-Za-z0-9_-]{4,64}$/.test(id);
+}
+
+function createSongId(seen) {
+  let id = '';
+  do {
+    id = randomBytes(9).toString('base64url');
+  } while (seen.has(id));
+  return id;
+}
+
+function collectIds() {
+  return new Set(listSongs().songs.map((song) => song.id));
 }
 
 function readJsonString(source, index) {

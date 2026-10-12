@@ -16,6 +16,27 @@ export function fetchSongs() {
   return request('/api/songs');
 }
 
+export function fetchSong(id) {
+  return request(`/api/songs/${encodeURIComponent(id)}`);
+}
+
+export function songIdFromLocation() {
+  return new URL(window.location.href).searchParams.get('song') || '';
+}
+
+export function songShareUrl(id) {
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('song', id);
+  return url.toString();
+}
+
+export function setSongUrl(id) {
+  const url = new URL(songShareUrl(id));
+  window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+}
+
 export function saveSong(song) {
   return request('/api/songs', { method: 'POST', body: JSON.stringify(song) });
 }
