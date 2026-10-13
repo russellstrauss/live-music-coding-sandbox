@@ -1021,27 +1021,6 @@ window.UISlider = function(cb, id, initVal= .5, containerStyle = {}) {
     document.body.appendChild(sliderContainer);
 }
 
-// Control the orbit Filter with a UI slider
-// window.UISlider(
-//  (v, e) => {
-//  const controller = getSuperdoughAudioController()
-//  const nodes = controller.nodes
-//  Array.from(Object.values(nodes)).forEach(node => {
-//    node.getDjf?.(v)
-//  })
-// },
-// 'djfilt', .5, {right: '144px'})
-
-window.UISlider(
-  (v, e) => {
-  const controller = getSuperdoughAudioController()
-  const nodes = controller.nodes
-  Array.from(Object.values(nodes)).forEach(node => {
-   node.summingNode.gain.setValueAtTime(v, 0)
-  })
-},
-'Volume', .8)
-
 // GLOSSING FUNCTIONS <3 these are pulled from Glossing's repo: 
 // https://codeberg.org/glossing/Strudel_Scripts
 
