@@ -22,6 +22,12 @@
   opacity: 0.5;
 }
 
+@media (max-width: 767px) {
+  #code {
+    font-size: 7px !important;
+  }
+}
+
 #code .cm-scroller {
   padding-top: 10px !important;
   height: 100%;

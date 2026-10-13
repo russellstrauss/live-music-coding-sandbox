@@ -1,0 +1,14 @@
+# Cloudflare Workers static deploy for the Astro site.
+# Build output lives in website/dist (see root package.json "build" script).
+#
+# In Cloudflare Workers Builds, set:
+#   Build command:  pnpm run build
+#   Deploy command: npx wrangler deploy --config wrangler.toml
+#
+# Set `name` to match your Worker / project name in the Cloudflare dashboard.
+
+name = "music-live-coding-sandbox"
+compatibility_date = "2026-10-12"
+
+[assets]
+directory = "./website/dist"
